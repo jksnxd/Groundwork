@@ -72,11 +72,6 @@ struct ComponentStorage {
 };
 
 
-// Lets implement ComponentStore
-// I will allocate a ComponentStore for each type of Component type (Health, Transform, Position...etc)
-// Each ComponentStore will hold a SparseSet that maps this relationship.
-// the sparse array will hold the indicies/positions of the entity ids, dense will hold the entity ids.
-// a component array will exist that holds the different versions of that component, this will be stored at a mappable index as well.
 
 
 
