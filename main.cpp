@@ -6,6 +6,12 @@ struct SparseSet {
   int dense[MAX];
   int sparse[MAX * SPARSE_FACTOR];
 
+  SparseSet() {
+	  for (int i=0; i<MAX*SPARSE_FACTOR;i++) {
+		  sparse[i] = -1;
+	  }
+  }
+
   int n = 0;
   void add(int x) {
     dense[n] = x;
@@ -14,31 +20,40 @@ struct SparseSet {
   }
 
   void remove(int x) {
-    int dense_location = sparse[x];
-    int last_element = dense[n - 1];
-
-    if (x != last_element) {
-      dense[dense_location] = last_element;
-      sparse[last_element] = dense_location;
+    int index = contains(x);
+    if (index == -1) {
+	    return;
     }
-    dense[n - 1] = 0;
-    sparse[x] = 0;
-    n--;
+
+    int last_element = dense[n - 1];
+    dense[index] = last_element;
+    sparse[last_element] = index;
+
+    sparse[x] = -1;
+    --n;
   }
 
   int contains(int x) {
-    return dense[sparse[x]];
+    if (x >= MAX) {
+	    return -1;
+    }
+
+    if (sparse[x] != -1 && sparse[x] < n && dense[sparse[x]] == x) {
+	    return (sparse[x]);
+    }
+
+    return -1;
   }
 
   void print() {
     std::cout << "Dense: ";
-    for (int i = 0; i < MAX; i++) {
+    for (int i = 0; i < n; i++) {
       std::cout << dense[i];
     }
     std::cout << std::endl;
 
     std::cout << "Sparse: ";
-    for (int i = 0; i < MAX * SPARSE_FACTOR; i++) {
+    for (int i = 0; i < MAX; i++) {
       std::cout << sparse[i];
     }
     std::cout << std::endl;
@@ -57,7 +72,7 @@ template <typename T> struct ComponentStorage {
   SparseSet sparseSet;
   T components[50];
 
-  void addComponent(int entityID, const T &component) {
+  void addComponent(int entityID, const T& component) {
     sparseSet.add(entityID);
     int ent_index = sparseSet.sparse[entityID];
     components[ent_index] = component;
@@ -65,7 +80,7 @@ template <typename T> struct ComponentStorage {
 
   void removeComponent(int entityID) {
     int remove_index = sparseSet.sparse[entityID];
-    int last_valid_index = sizeof(sparseSet.dense) - 1;
+    int last_valid_index = sparseSet.n - 1;
 
     if (remove_index != last_valid_index) {
       components[remove_index] = std::move(components[last_valid_index]);
@@ -77,32 +92,30 @@ template <typename T> struct ComponentStorage {
   }
 
   T *getComponent(int entityID) {
+    int index = sparseSet.sparse[entityID];
+    
+    int containsCheck = sparseSet.contains(entityID);
 
-    if (!sparseSet.contains(entityID)) {
-      return nullptr;
+    if (containsCheck == -1) {
+	    return nullptr;
     }
 
-    int index = sparseSet.sparse[entityID];
     return &components[index];
   }
 
 };
 
 int main() {
-  SparseSet s1 = SparseSet{};
-  s1.add(2);
-  s1.add(3);
-  s1.add(9);
 
   ComponentStorage<Health> healthStore;
+
   healthStore.addComponent(3, Health(50));
+  healthStore.addComponent(9, Health(100));
 
-  std::cout << healthStore.getComponent(3) << std::endl;
 
-  healthStore.removeComponent(3);
-  if (healthStore.getComponent(3) != nullptr) {
-    std::cout << healthStore.getComponent(3)->value << std::endl;
-  } else {
-    std::cout << "component doesnt exist" << std::endl;
-  }
+  std::cout << healthStore.getComponent(9)->value << std::endl;
+
+  std::cout << healthStore.getComponent(3)->value << std::endl;
+
+
 }
