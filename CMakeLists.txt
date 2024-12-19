@@ -25,3 +25,7 @@ target_link_libraries(groundwork PRIVATE
   game
 )
 
+add_custom_command(TARGET groundwork POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${SDL3_LIB_DIR}/SDL3.dll"
+    $<TARGET_FILE_DIR:groundwork>)
