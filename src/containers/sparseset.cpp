@@ -1,5 +1,3 @@
-#include <iostream>
-
 const int MAX = 12;
 const int SPARSE_FACTOR = 2;
 struct SparseSet {
@@ -45,17 +43,17 @@ struct SparseSet {
     return -1;
   }
 
-  void print() {
-    std::cout << "Dense: ";
-    for (int i = 0; i < n; i++) {
-      std::cout << dense[i];
-    }
-    std::cout << std::endl;
-
-    std::cout << "Sparse: ";
-    for (int i = 0; i < MAX; i++) {
-      std::cout << sparse[i];
-    }
-    std::cout << std::endl;
-  }
+  /*void print() {*/
+  /*  std::cout << "Dense: ";*/
+  /*  for (int i = 0; i < n; i++) {*/
+  /*    std::cout << dense[i];*/
+  /*  }*/
+  /*  std::cout << std::endl;*/
+  /**/
+  /*  std::cout << "Sparse: ";*/
+  /*  for (int i = 0; i < MAX; i++) {*/
+  /*    std::cout << sparse[i];*/
+  /*  }*/
+  /*  std::cout << std::endl;*/
+  /*}*/
 };

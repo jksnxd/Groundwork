@@ -1,4 +1,5 @@
 #include "sparseset.cpp"
+#include <utility>
 
 template <typename T> struct ComponentStorage {
   SparseSet sparseSet;

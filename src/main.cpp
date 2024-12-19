@@ -1,6 +1,7 @@
-#include "components/health.hpp"
-#include "components/position.hpp"
-#include "game/scene.hpp"
+#include "components/health.cpp"
+#include "components/position.cpp"
+#include "game/scene.cpp"
+#include <SDL3/SDL.h>
 
 int main() {
   Scene active_scene = Scene{};
@@ -10,4 +11,6 @@ int main() {
 
   active_scene.registry.addComponent(9, Position(100, 200, 2));
   active_scene.registry.addComponent(9, Health(25));
+
+  SDL_Init(SDL_INIT_AUDIO);
 }
