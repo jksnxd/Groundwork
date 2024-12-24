@@ -4,12 +4,13 @@ project(groundwork)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-
+set(CMAKE_BUILD_TYPE Debug)
 
 add_subdirectory(src/components)
 add_subdirectory(src/containers)
 add_subdirectory(src/game)
 
+find_package(Vulkan REQUIRED)
 
 add_executable(groundwork src/main.cpp)
 
@@ -23,6 +24,7 @@ target_link_libraries(groundwork PRIVATE
   components
   containers
   game
+  Vulkan::Vulkan
 )
 
 add_custom_command(TARGET groundwork POST_BUILD
