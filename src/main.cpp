@@ -1,4 +1,7 @@
 #include "SDL3/SDL_log.h"
+#include <stdio.h>
+#include <string.h>
+#include <windows.h>
 #include "components/health.cpp"
 #include "components/position.cpp"
 #include "game/scene.cpp"
@@ -12,6 +15,13 @@
 class VulkanEngine {
 private:
   VkInstance instance;
+  VkPhysicalDevice pChosenDevice = VK_NULL_HANDLE;
+  VkDevice logicalDevice;
+  VkQueue graphicsQueue;
+
+  VkPhysicalDeviceProperties deviceProperties;
+  VkPhysicalDeviceFeatures deviceFeatures;
+  
 
 public:
   void createInstance() {
@@ -57,9 +67,106 @@ public:
 
     SDL_free(extensions);
   }
+
+  bool isDeviceSuitable(VkPhysicalDevice device) {
+      vkGetPhysicalDeviceProperties(device, &deviceProperties);
+      vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+      std::cout << deviceProperties.deviceName << std::endl;
+      std::cout << deviceFeatures.geometryShader << std::endl;
+      std::cout << deviceProperties.deviceType << std::endl;
+
+      return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
+            deviceFeatures.geometryShader;
+  }
+
+  void getPhysicalDevice() {
+    uint32_t pDeviceCount = 0;
+    vkEnumeratePhysicalDevices(instance, &pDeviceCount, nullptr);
+    VkPhysicalDevice* pDevices = (VkPhysicalDevice*)malloc(pDeviceCount * sizeof(VkPhysicalDevice));
+    VkPhysicalDeviceProperties* pDeviceProperties = (VkPhysicalDeviceProperties*)malloc(pDeviceCount * sizeof(VkPhysicalDeviceProperties));
+    vkEnumeratePhysicalDevices(instance, &pDeviceCount, pDevices);
+
+
+    for (int i=0; i<pDeviceCount;i++) {
+      vkGetPhysicalDeviceProperties(pDevices[i], &pDeviceProperties[i]);
+    }
+    
+    bool foundSuitableDevice = false;
+    for (int i = 0; i < pDeviceCount; i++) {
+        if (isDeviceSuitable(pDevices[i])) {
+            pChosenDevice = pDevices[i];
+            foundSuitableDevice = true;
+            break;
+        }
+    }
+    if (!foundSuitableDevice) {
+        std::cout << "No suitable device found in getPhysicalDevice()" << std::endl;
+    }
+
+    free(pDevices);
+    free(pDeviceProperties);
+  }
+
+  void createLogicalDevice() {
+    int8_t index = -1;
+    if (pChosenDevice == VK_NULL_HANDLE) {
+      std::cout << "physical device is null, call getPhysicalDevice()" << std::endl;
+      return;
+    }
+
+    std::cout << "physical device has been found" << std::endl;
+
+    uint32_t propertyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(pChosenDevice, &propertyCount, nullptr);
+    VkQueueFamilyProperties* pQueueFamilyProperties = (VkQueueFamilyProperties*)malloc(propertyCount * sizeof(VkQueueFamilyProperties));
+    vkGetPhysicalDeviceQueueFamilyProperties(pChosenDevice, &propertyCount, pQueueFamilyProperties);
+    
+    for (int i=0;i<propertyCount;i++) {
+      if (pQueueFamilyProperties[i].queueFlags && VK_QUEUE_COMPUTE_BIT) {
+        index = i;
+      } else {
+        std::cout << "No device property with VK_QUEUE_COMPUTE_BIT found" << std::endl;
+      }
+    }
+    
+    VkDeviceQueueCreateInfo queueInfo{};
+    queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queueInfo.queueFamilyIndex = index;
+    queueInfo.queueCount = 1;
+    float priority = 1.0;
+    queueInfo.pQueuePriorities = &priority;
+
+    VkDeviceCreateInfo deviceInfo{};
+    deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    deviceInfo.queueCreateInfoCount = 1;
+    deviceInfo.pEnabledFeatures = &deviceFeatures;
+    deviceInfo.pQueueCreateInfos = &queueInfo;
+
+    vkCreateDevice(pChosenDevice, &deviceInfo, nullptr, &logicalDevice);
+    vkGetDeviceQueue(logicalDevice, 1, 0, &graphicsQueue);
+
+    if (logicalDevice == VK_NULL_HANDLE) {
+        std::cout << "The logical device has failed to be created" << std::endl;
+    }
+
+  }
 };
 
-int main() {
+void createConsole() {
+  // SDL defines some overridden SDL_Main macro, so this is so I can do quick debugging with std::cout
+  AllocConsole();
+  freopen("CONIN$", "r", stdin);
+  freopen("CONOUT$", "w", stdout);
+  freopen("CONOUT$", "w", stderr);
+}
+
+int main(int argc, char * argv[]) {
+
+  //if (strcmp(argv[1], "--debug") == 0) {
+  //     createConsole();
+  // }
+ 
   /*Scene active_scene = Scene{};*/
   /**/
   /*active_scene.registry.addComponent(1, Position(5, 20, 4));*/
@@ -76,6 +183,8 @@ int main() {
       SDL_CreateWindow("Title", 500, 600, SDL_WINDOW_FULLSCREEN);
 
   vulkanEngine.createInstance();
+  vulkanEngine.getPhysicalDevice();
+  vulkanEngine.createLogicalDevice();
 
   if (window == NULL) {
     SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Could not create window: %s\n",
@@ -83,7 +192,7 @@ int main() {
     return 1;
   }
 
-  /*SDL_Delay(10000);*/
+  SDL_Delay(10000);
 
   SDL_DestroyWindow(window);
   SDL_Quit();
