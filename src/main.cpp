@@ -22,8 +22,35 @@ const int MAX_FRAMES_IN_FLIGHT = 2;
 #include <algorithm>
 #include <fstream>
 #include <limits>
+#include "backends/imgui_impl_vulkan.h"
+#include "backends/imgui_impl_sdl3.h"
+#include "imgui.h"
+#include "math/math.hpp"
+#include <array>
 
 
+struct Vertex {
+    Vector2 pos;
+    Vector3 color;
+
+    static VkVertexInputBindingDescription getBindingDescription() {
+        VkVertexInputBindingDescription bindingDescription{};
+        bindingDescription.binding = 0;
+        bindingDescription.stride = sizeof(Vertex);
+        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+        return bindingDescription;
+    }
+
+    static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions() {
+        std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
+        attributeDescriptions[0].binding = 0;
+        attributeDescriptions[0].location = 0;
+        attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+        attributeDescriptions[0].offset = offsetof(Vertex, pos);
+
+    return attributeDescriptions;
+}
+};
 
 static std::vector<char> readFile(const std::string& filename) {
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
@@ -430,10 +457,14 @@ public:
 
       VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
       vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-      vertexInputInfo.vertexBindingDescriptionCount = 0;
-      vertexInputInfo.pVertexBindingDescriptions = nullptr;
-      vertexInputInfo.vertexAttributeDescriptionCount = 0;
-      vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+
+      auto bindingDescription = Vertex::getBindingDescription();
+      auto attributeDescriptions = Vertex::getAttributeDescriptions();
+
+      vertexInputInfo.vertexBindingDescriptionCount = 1;
+      vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+      vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+      vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
       VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
       inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -814,6 +845,13 @@ public:
       createCommandPool();
       createCommandBuffer();
       createSyncObjects();
+
+      ImGui::CreateContext();
+      ImGuiIO& io = ImGui::GetIO(); (void)io;
+      io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+      io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+  
+      ImGui_ImplSDL3_InitForVulkan(window);
   }
 };
 
@@ -826,6 +864,13 @@ void createConsole() {
 }
 
 
+
+
+const std::vector<Vertex> vertices = {
+    {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+    {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+};
 
 int main(int argc, char * argv[]) {
 
@@ -860,13 +905,12 @@ int main(int argc, char * argv[]) {
           if (e.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED) {
               vulkanEngine.recreateSwapChain();
           }
-          /*else if (e.type = SDL_EVENT_WINDOW_CLOSE_REQUESTED) {
-              window_open = false;
-          }*/
+        //   else if (e.type = SDL_EVENT_QUIT) {
+        //       std::cout << "quit event requested" << std::endl;
+        //       window_open = false;
+        //   }
       }
   }
-
-  // SDL_Delay(10000);
 
   SDL_DestroyWindow(window);
   SDL_Quit();

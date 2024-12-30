@@ -14,7 +14,9 @@ set(Vulkan_INCLUDE_DIR "$ENV{VK_PATH}/Include")
 set(Vulkan_LIBRARY "$ENV{VK_PATH}/Lib/vulkan-1.lib")
 find_package(Vulkan REQUIRED)
 
-add_executable(groundwork src/main.cpp)
+add_subdirectory(imgui)
+
+add_executable(groundwork src/main.cpp src/math/math.hpp)
 
 set(SDL3_INCLUDE_DIR "$ENV{SDL_PATH}/include")
 set(SDL3_LIB_DIR "$ENV{SDL_PATH}/lib")
@@ -28,5 +30,6 @@ target_link_libraries(groundwork PRIVATE
   components
   containers
   game
+  imgui
 )
 
